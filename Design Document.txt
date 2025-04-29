@@ -1,0 +1,85 @@
+File Transfer Harness
+=====================
+The application will allow users to configure file transfers at specified
+intervals using HTTP(S) or SFTP. I am taking inspiration from load testing 
+tools like k6. The harness enables testing of complex applications that process 
+files and place them on destination servers. Transfer status is queried from a 
+pair MySQL databases sitting at the ingress and egress points of the application.
+
+
+Design Guidelines
+=================
+1. The application should work on current Linux OS, particularly RHEL 9, but
+APIs which are platform-independent should be preferred.
+
+2. The application should have a powerful and well-designed CLI. Include flags 
+for verbosity. Ensure standard outputs are readable and structured since the 
+terminal UX/UI is very important. CLI flags take precedence over config file.
+No interactive mode required.
+
+3. Include good logs that can help debug the application or network connectivity 
+issues.
+
+4. This application is intended to be long-running, so error handling should be
+robust. Some errors, such as failing to connect to a server, are possible outcomes 
+for the load test and should not cause the test to stop. At higher data rates, 
+these types of failures need to be included as part of the statistics provided at 
+the conclusion of the test run.
+
+5. Use Python 3 to implement this project. Use best practices and Pythonic design
+patterns. Determine best package references to implement the features below.
+
+
+Features
+========
+1. While CLI flags can be used, the application should be fully configurable 
+in a config file (YAML or something easily user-editable). Ensure this is 
+user friendly and not tedious (e.g. handle whitespace). A well-documented sample
+config should be provided to enable user to get started quickly.
+
+2. The application should provide a way for users to configure HTTP(S) jobs.
+An HTTP(S) job has a configuration method (e.g., POST), URL, SSL key/cert path (optional), a
+path to a directory containing files to send, a way to specify rate to send
+(include both sending including waiting for response and sending on time even
+if the server has not responded yet). Also allow users to configure HTTP headers,
+including the ability to generate UUIDs and include filename for each request.
+Rates are specified using files per period (e.g., files/hour).
+
+3. The application should provide a way for users to configure SFTP jobs.
+An SFTP job is always a PUT. An SFTP job should have options for SSH key path
+(optional) or password, a path to a directory containing files to send, a way to specify 
+rate to send (include both sending including waiting for response and sending 
+on time even if the server has not responded yet). Rates are specified using files 
+per period (e.g., files/hour).
+
+4. The application should be capable of executing several jobs concurrently. The 
+idea is to simulate loads on the system where multiple data sources are uploading
+simultaneously. Use thread/async APIs and ensure application remains responsive.
+
+5. In addition to the mode described above which load tests the system, include a 
+mode that queries 2 MySQL databases to get tracking information about files that have 
+been sent in a given timespan. The 2 MySQL database connections and credentials are user 
+configurable, but the database schema that should be expected is described below.
+Include options for polling rate. The application should not modify the DB and any
+errors with the SQL query are fatal.
+
+Database schema:
+ - UUID: a UUID unique to each transaction that will be used to correlate the 2 DBs
+ - filename: string, name of file sent
+ - startTime: a timestamp when the server started proccessing the file
+ - endTime: a timestamp when the server completed proccessing the file
+ - status: an enum of possible result codes (SUCCESS, FAILED, TIMEOUT)
+
+The application should attempt to match entries from each DB based on UUID. The total 
+transfer time is determed by (egress endTime - ingress startTime). The status from 
+both DBs should be included in the output, but the egress status determined pass/fail.
+
+The output of this process is a report in HTML format saved to a user-specified path.
+The page should display the table of transfers and statistics about the entire test run.
+The page is going to be provided to enterprise stakeholders so it should look professional
+and use CSS as necessary. Key statistics we are interested in are pass rate, min/max/avg
+transit times, etc.
+
+Include a seperate list of database rows ff there are any which do not form a pair based 
+on UUID. A row with each UUID should exist on boths DBs, otherwise an exceptional error 
+has occured.

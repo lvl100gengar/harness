@@ -1,0 +1,55 @@
+# File Transfer Harness Configuration
+
+# Global settings
+log_level: INFO  # DEBUG, INFO, WARN, ERROR
+output_dir: ./output
+report_path: ./output/report.html
+
+# Job definitions
+jobs:
+  - name: http_upload_job
+    type: http
+    enabled: true
+    config:
+      url: "https://example.com/upload"
+      method: POST
+      directory: "./files_to_upload"
+      rate: 60/hour  # 60 files per hour
+      ssl:
+        cert_path: "/path/to/cert.pem"
+        key_path: "/path/to/key.pem"
+      headers:
+        Content-Type: "application/octet-stream"
+        X-Transaction-Id: "{{uuid}}"  # Will be replaced with generated UUID
+        X-Filename: "{{filename}}"    # Will be replaced with current filename
+
+  - name: sftp_upload_job
+    type: sftp
+    enabled: true
+    config:
+      host: "sftp.example.com"
+      port: 22
+      username: "uploader"
+      key_path: "/path/to/ssh_key"  # Either key_path or password must be specified
+      # password: "secret"          # Uncomment to use password auth
+      directory: "./files_to_upload"
+      remote_path: "/uploads"
+      rate: 30/hour  # 30 files per hour
+
+# Database configuration
+databases:
+  ingress:
+    host: "ingress-db.example.com"
+    port: 3306
+    database: "file_tracking"
+    username: "reader"
+    password: "secret"
+    ssl: true
+  
+  egress:
+    host: "egress-db.example.com"
+    port: 3306
+    database: "file_tracking"
+    username: "reader"
+    password: "secret"
+    ssl: true 
