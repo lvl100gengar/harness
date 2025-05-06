@@ -5,7 +5,7 @@ import logging
 import os
 import uuid
 from abc import ABC, abstractmethod
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import List, Optional
 
 import aiohttp
@@ -18,12 +18,58 @@ from .config import HTTPJobConfig, SFTPJobConfig, parse_rate
 class Job(ABC):
     """Base class for transfer jobs."""
 
-    def __init__(self, name: str, directory: str, rate: str):
+    def __init__(self, name: str, directory: str, initial_rate: str, target_rate: str,
+                 username: str, ramp_rate: Optional[str] = None):
         self.name = name
         self.directory = directory
-        self.files_per_second = parse_rate(rate)
-        self.interval = 1.0 / self.files_per_second if self.files_per_second > 0 else float('inf')
+        self.username = username
         self.logger = logging.getLogger(f"job.{name}")
+
+        # Parse rates
+        self.initial_files_per_second = parse_rate(initial_rate)
+        self.target_files_per_second = parse_rate(target_rate)
+        self.ramp_files_per_second = parse_rate(ramp_rate) if ramp_rate else 0
+
+        # Validate rates
+        if self.initial_files_per_second > self.target_files_per_second:
+            raise ValueError(
+                f"Initial rate ({initial_rate}) cannot be higher than "
+                f"target rate ({target_rate})"
+            )
+        
+        # Start with initial rate
+        self.current_files_per_second = self.initial_files_per_second
+        self.interval = self._calculate_interval()
+        self.last_ramp_time = None
+
+    def _calculate_interval(self) -> float:
+        """Calculate the interval between file sends based on current rate."""
+        return 1.0 / self.current_files_per_second if self.current_files_per_second > 0 else float('inf')
+
+    def _update_rate(self) -> None:
+        """Update the current rate based on ramp configuration."""
+        if not self.ramp_files_per_second or not self.last_ramp_time:
+            return
+
+        # Calculate how much time has passed since last ramp
+        time_passed = (datetime.now() - self.last_ramp_time).total_seconds()
+        
+        # Calculate how much to increase the rate
+        rate_increase = self.ramp_files_per_second * time_passed
+        new_rate = min(
+            self.current_files_per_second + rate_increase,
+            self.target_files_per_second
+        )
+        
+        if new_rate != self.current_files_per_second:
+            self.current_files_per_second = new_rate
+            self.interval = self._calculate_interval()
+            self.logger.info(
+                f"Ramped transfer rate to {self.current_files_per_second:.2f} files/second "
+                f"(interval: {self.interval:.2f}s)"
+            )
+
+        self.last_ramp_time = datetime.now()
 
     @abstractmethod
     async def send_file(self, filepath: str, transaction_id: str) -> bool:
@@ -32,10 +78,26 @@ class Job(ABC):
 
     async def run(self):
         """Run the job continuously."""
-        self.logger.info(f"Starting job {self.name}")
+        self.logger.info(f"Starting job {self.name} for user {self.username}")
+        
+        if self.ramp_files_per_second:
+            self.logger.info(
+                f"Rate ramping enabled: Starting at {self.current_files_per_second:.2f} files/second, "
+                f"increasing by {self.ramp_files_per_second:.2f} files/second, "
+                f"up to {self.target_files_per_second:.2f} files/second"
+            )
+            self.last_ramp_time = datetime.now()
+        else:
+            self.logger.info(
+                f"Fixed rate: {self.current_files_per_second:.2f} files/second "
+                f"(interval: {self.interval:.2f}s)"
+            )
         
         while True:
             try:
+                # Update rate if ramping is enabled
+                self._update_rate()
+
                 files = os.listdir(self.directory)
                 if not files:
                     await asyncio.sleep(1)
@@ -63,7 +125,7 @@ class Job(ABC):
                         f"(took {duration:.2f}s)"
                     )
 
-                    # Wait for the next interval
+                    # Wait for the next interval, accounting for transfer duration
                     await asyncio.sleep(max(0, self.interval - duration))
 
             except Exception as e:
@@ -75,7 +137,14 @@ class HTTPJob(Job):
     """HTTP file transfer job."""
 
     def __init__(self, name: str, config: HTTPJobConfig):
-        super().__init__(name, config.directory, config.rate)
+        super().__init__(
+            name=name,
+            directory=config.directory,
+            initial_rate=config.initial_rate,
+            target_rate=config.target_rate,
+            username=config.username,
+            ramp_rate=config.ramp_rate
+        )
         self.config = config
         self.session: Optional[aiohttp.ClientSession] = None
 
@@ -102,8 +171,16 @@ class HTTPJob(Job):
             data = await f.read()
 
         headers = dict(self.config.headers or {})
+        # Replace template variables in headers
+        replacements = {
+            '{{uuid}}': transaction_id,
+            '{{filename}}': os.path.basename(filepath),
+            '{{username}}': self.username
+        }
         headers = {
-            k: v.replace('{{uuid}}', transaction_id).replace('{{filename}}', os.path.basename(filepath))
+            k: v.replace('{{uuid}}', transaction_id)
+                 .replace('{{filename}}', os.path.basename(filepath))
+                 .replace('{{username}}', self.username)
             for k, v in headers.items()
         }
 
@@ -124,7 +201,14 @@ class SFTPJob(Job):
     """SFTP file transfer job."""
 
     def __init__(self, name: str, config: SFTPJobConfig):
-        super().__init__(name, config.directory, config.rate)
+        super().__init__(
+            name=name,
+            directory=config.directory,
+            initial_rate=config.initial_rate,
+            target_rate=config.target_rate,
+            username=config.username,
+            ramp_rate=config.ramp_rate
+        )
         self.config = config
         self.client: Optional[asyncssh.SSHClientConnection] = None
 

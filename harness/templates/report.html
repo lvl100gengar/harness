@@ -1,120 +1,323 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>File Transfer Report</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Transfer Test Report</title>
     <style>
+        :root {
+            --success-color: #28a745;
+            --warning-color: #ffc107;
+            --danger-color: #dc3545;
+            --primary-color: #007bff;
+            --secondary-color: #6c757d;
+            --light-color: #f8f9fa;
+            --dark-color: #343a40;
+        }
+
         body {
-            font-family: Arial, sans-serif;
-            margin: 40px;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             line-height: 1.6;
-        }
-        
-        .header {
-            margin-bottom: 30px;
-        }
-        
-        .stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            margin-bottom: 40px;
-        }
-        
-        .stat-card {
-            background: #f5f5f5;
+            color: var(--dark-color);
+            margin: 0;
             padding: 20px;
+            background-color: #f5f5f5;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 30px;
             border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
-        
+
+        h1, h2, h3 {
+            color: var(--dark-color);
+            margin-top: 0;
+        }
+
+        .timestamp {
+            color: var(--secondary-color);
+            font-size: 0.9em;
+            margin-bottom: 30px;
+        }
+
+        .test-info {
+            background-color: var(--light-color);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+
+        .test-info dl {
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 10px;
+            margin: 0;
+        }
+
+        .test-info dt {
+            font-weight: 600;
+            color: var(--secondary-color);
+        }
+
+        .test-info dd {
+            margin: 0;
+        }
+
+        .stats-card {
+            background-color: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 30px;
+            border: 1px solid #e9ecef;
+        }
+
+        .job-config {
+            background-color: var(--light-color);
+            border-radius: 6px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+
+        .job-config h4 {
+            margin: 0 0 10px 0;
+            color: var(--primary-color);
+        }
+
+        .job-config dl {
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 8px;
+            margin: 0;
+        }
+
+        .job-config dt {
+            font-weight: 500;
+            color: var(--secondary-color);
+        }
+
+        .job-config dd {
+            margin: 0;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 15px;
+            background-color: var(--light-color);
+            border-radius: 6px;
+        }
+
         .stat-value {
             font-size: 24px;
             font-weight: bold;
-            color: #2c3e50;
+            margin: 10px 0;
         }
-        
+
         .stat-label {
-            color: #7f8c8d;
+            color: var(--secondary-color);
             font-size: 14px;
         }
-        
+
+        .success-rate {
+            color: var(--success-color);
+        }
+
+        .failure-rate {
+            color: var(--danger-color);
+        }
+
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 30px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin: 20px 0;
+            font-size: 14px;
         }
-        
+
         th, td {
             padding: 12px;
             text-align: left;
-            border-bottom: 1px solid #ddd;
+            border-bottom: 1px solid #e9ecef;
         }
-        
+
         th {
-            background-color: #f8f9fa;
+            background-color: var(--light-color);
             font-weight: 600;
         }
-        
+
         tr:nth-child(even) {
             background-color: #f8f9fa;
         }
-        
-        .success { color: #27ae60; }
-        .error { color: #c0392b; }
-        .warning { color: #f39c12; }
-        
-        .section {
-            margin-bottom: 40px;
+
+        .status {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: 500;
         }
-        
-        h2 {
-            color: #2c3e50;
-            margin-bottom: 20px;
+
+        .status-success {
+            background-color: #d4edda;
+            color: var(--success-color);
+        }
+
+        .status-failed {
+            background-color: #f8d7da;
+            color: var(--danger-color);
+        }
+
+        .status-timeout {
+            background-color: #fff3cd;
+            color: var(--warning-color);
+        }
+
+        .warning-section {
+            background-color: #fff3cd;
+            border: 1px solid #ffeeba;
+            border-radius: 6px;
+            padding: 15px;
+            margin-top: 30px;
+        }
+
+        .warning-section h3 {
+            color: #856404;
+            margin-top: 0;
+        }
+
+        .protocol-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: 500;
+            background-color: var(--primary-color);
+            color: white;
+            margin-right: 10px;
         }
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1>File Transfer Report</h1>
-        <p>Generated at: {{ timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</p>
-    </div>
+    <div class="container">
+        <h1>File Transfer Test Report</h1>
+        
+        <!-- Test Information -->
+        <div class="test-info">
+            <h2>Test Information</h2>
+            <dl>
+                <dt>Report Generated:</dt>
+                <dd>{{ timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</dd>
+                <dt>Test Period:</dt>
+                <dd>{{ start_time.strftime('%Y-%m-%d %H:%M:%S') }} to {{ end_time.strftime('%Y-%m-%d %H:%M:%S') }}</dd>
+                <dt>Duration:</dt>
+                <dd>{{ ((end_time - start_time).total_seconds() / 3600)|round(1) }} hours</dd>
+            </dl>
+        </div>
 
-    <div class="stats">
-        <div class="stat-card">
-            <div class="stat-value">{{ stats.total }}</div>
-            <div class="stat-label">Total Transfers</div>
+        <!-- Overall Statistics -->
+        <div class="stats-card">
+            <h2>Overall Statistics</h2>
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-value">{{ overall_stats.total }}</div>
+                    <div class="stat-label">Total Transfers</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value success-rate">{{ "%.1f"|format(overall_stats.success_rate) }}%</div>
+                    <div class="stat-label">Success Rate</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">{{ "%.2f"|format(overall_stats.avg_duration) if overall_stats.avg_duration else 'N/A' }}s</div>
+                    <div class="stat-label">Average Duration</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">{{ "%.2f"|format(overall_stats.min_duration) if overall_stats.min_duration else 'N/A' }}s</div>
+                    <div class="stat-label">Min Duration</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">{{ "%.2f"|format(overall_stats.max_duration) if overall_stats.max_duration else 'N/A' }}s</div>
+                    <div class="stat-label">Max Duration</div>
+                </div>
+            </div>
         </div>
-        <div class="stat-card">
-            <div class="stat-value">{{ "%.1f"|format(stats.success_rate) }}%</div>
-            <div class="stat-label">Success Rate</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-value">{{ stats.successful }}</div>
-            <div class="stat-label">Successful</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-value">{{ stats.failed }}</div>
-            <div class="stat-label">Failed</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-value">{{ stats.timeout }}</div>
-            <div class="stat-label">Timeouts</div>
-        </div>
-        {% if stats.avg_duration is not none %}
-        <div class="stat-card">
-            <div class="stat-value">{{ "%.2f"|format(stats.avg_duration) }}s</div>
-            <div class="stat-label">Average Duration</div>
-        </div>
-        {% endif %}
-    </div>
 
-    <div class="section">
+        <!-- Job Statistics -->
+        {% for username, stats in job_stats.items() %}
+        <div class="stats-card">
+            <h2>
+                {% if stats.job_config %}
+                    <span class="protocol-badge">{{ stats.job_config.type|upper }}</span>
+                {% endif %}
+                Job: {{ username }}
+            </h2>
+
+            {% if stats.job_config %}
+            <div class="job-config">
+                <h4>Configuration</h4>
+                <dl>
+                    <dt>Protocol:</dt>
+                    <dd>{{ stats.job_config.type|upper }}</dd>
+                    {% if stats.job_config.type == 'http' %}
+                        <dt>Method:</dt>
+                        <dd>{{ stats.job_config.config.method }}</dd>
+                        <dt>URL:</dt>
+                        <dd>{{ stats.job_config.config.url }}</dd>
+                    {% else %}
+                        <dt>Host:</dt>
+                        <dd>{{ stats.job_config.config.host }}</dd>
+                        <dt>Remote Path:</dt>
+                        <dd>{{ stats.job_config.config.remote_path }}</dd>
+                    {% endif %}
+                    <dt>Initial Rate:</dt>
+                    <dd>{{ stats.job_config.config.initial_rate }}</dd>
+                    <dt>Target Rate:</dt>
+                    <dd>{{ stats.job_config.config.target_rate }}</dd>
+                    {% if stats.job_config.config.ramp_rate %}
+                        <dt>Ramp Rate:</dt>
+                        <dd>{{ stats.job_config.config.ramp_rate }}</dd>
+                    {% endif %}
+                </dl>
+            </div>
+            {% endif %}
+
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-value">{{ stats.total }}</div>
+                    <div class="stat-label">Total Transfers</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value success-rate">{{ "%.1f"|format(stats.success_rate) }}%</div>
+                    <div class="stat-label">Success Rate</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">{{ "%.2f"|format(stats.avg_duration) if stats.avg_duration else 'N/A' }}s</div>
+                    <div class="stat-label">Average Duration</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">{{ stats.successful }}</div>
+                    <div class="stat-label">Successful</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value failure-rate">{{ stats.failed + stats.timeout }}</div>
+                    <div class="stat-label">Failed/Timeout</div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+
+        <!-- Transfer Details -->
         <h2>Transfer Details</h2>
         <table>
             <thead>
                 <tr>
                     <th>UUID</th>
+                    <th>Username</th>
                     <th>Filename</th>
                     <th>Start Time</th>
                     <th>End Time</th>
@@ -126,55 +329,55 @@
                 {% for ingress, egress in transfers %}
                 <tr>
                     <td>{{ ingress.uuid }}</td>
+                    <td>{{ ingress.username }}</td>
                     <td>{{ ingress.filename }}</td>
                     <td>{{ ingress.start_time.strftime('%Y-%m-%d %H:%M:%S') }}</td>
                     <td>{{ egress.end_time.strftime('%Y-%m-%d %H:%M:%S') if egress.end_time else 'N/A' }}</td>
+                    <td>{{ "%.2f"|format((egress.end_time - ingress.start_time).total_seconds()) if egress.end_time else 'N/A' }}s</td>
                     <td>
-                        {% if egress.end_time %}
-                            {{ "%.2f"|format((egress.end_time - ingress.start_time).total_seconds()) }}s
-                        {% else %}
-                            N/A
-                        {% endif %}
-                    </td>
-                    <td class="{% if egress.status == 'SUCCESS' %}success{% elif egress.status == 'FAILED' %}error{% else %}warning{% endif %}">
-                        {{ egress.status }}
+                        <span class="status status-{{ egress.status.lower() }}">
+                            {{ egress.status }}
+                        </span>
                     </td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
-    </div>
 
-    {% if unpaired %}
-    <div class="section">
-        <h2>Unpaired Records</h2>
-        <table>
-            <thead>
-                <tr>
-                    <th>UUID</th>
-                    <th>Type</th>
-                    <th>Filename</th>
-                    <th>Start Time</th>
-                    <th>End Time</th>
-                    <th>Status</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for uuid, ingress, egress in unpaired %}
-                <tr>
-                    <td>{{ uuid }}</td>
-                    <td>{{ "Ingress" if ingress else "Egress" }}</td>
-                    <td>{{ ingress.filename if ingress else egress.filename }}</td>
-                    <td>{{ ingress.start_time.strftime('%Y-%m-%d %H:%M:%S') if ingress else 'N/A' }}</td>
-                    <td>{{ egress.end_time.strftime('%Y-%m-%d %H:%M:%S') if egress and egress.end_time else 'N/A' }}</td>
-                    <td class="{% if (egress and egress.status == 'SUCCESS') or (ingress and ingress.status == 'SUCCESS') %}success{% elif (egress and egress.status == 'FAILED') or (ingress and ingress.status == 'FAILED') %}error{% else %}warning{% endif %}">
-                        {{ egress.status if egress else ingress.status if ingress else 'N/A' }}
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        <!-- Unpaired Records -->
+        {% if unpaired %}
+        <div class="warning-section">
+            <h3>Warning: Unpaired Records</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>UUID</th>
+                        <th>Type</th>
+                        <th>Username</th>
+                        <th>Filename</th>
+                        <th>Time</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for uuid, ingress, egress in unpaired %}
+                    <tr>
+                        <td>{{ uuid }}</td>
+                        <td>{{ "Ingress Only" if ingress else "Egress Only" }}</td>
+                        <td>{{ ingress.username if ingress else egress.username }}</td>
+                        <td>{{ ingress.filename if ingress else egress.filename }}</td>
+                        <td>
+                            {% if ingress %}
+                                {{ ingress.start_time.strftime('%Y-%m-%d %H:%M:%S') }}
+                            {% else %}
+                                {{ egress.start_time.strftime('%Y-%m-%d %H:%M:%S') }}
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
     </div>
-    {% endif %}
 </body>
 </html> 

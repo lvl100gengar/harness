@@ -38,33 +38,35 @@ user friendly and not tedious (e.g. handle whitespace). A well-documented sample
 config should be provided to enable user to get started quickly.
 
 2. The application should provide a way for users to configure HTTP(S) jobs.
-An HTTP(S) job has a configuration method (e.g., POST), URL, SSL key/cert path (optional), a
-path to a directory containing files to send, a way to specify rate to send
-(include both sending including waiting for response and sending on time even
-if the server has not responded yet). Also allow users to configure HTTP headers,
-including the ability to generate UUIDs and include filename for each request.
-Rates are specified using files per period (e.g., files/hour).
+An HTTP(S) job has a configurable username, method (e.g., POST), URL, SSL key/cert 
+path (optional), a path to a directory containing files to send, a way to specify 
+rate to send, and a way to specify ramp rate for breakpoint testing. Also allow users 
+to configure HTTP headers, including the ability to generate UUIDs and include filename 
+for each request. Rates are specified using files per period (e.g., files/hour).
 
 3. The application should provide a way for users to configure SFTP jobs.
-An SFTP job is always a PUT. An SFTP job should have options for SSH key path
+An SFTP job is always a PUT. An SFTP job should have options for username, SSH key path
 (optional) or password, a path to a directory containing files to send, a way to specify 
-rate to send (include both sending including waiting for response and sending 
-on time even if the server has not responded yet). Rates are specified using files 
-per period (e.g., files/hour).
+rate to send, and a way to specify ramp rate for breakpoint testing. Rates are specified 
+using files per period (e.g., files/hour).
 
 4. The application should be capable of executing several jobs concurrently. The 
 idea is to simulate loads on the system where multiple data sources are uploading
 simultaneously. Use thread/async APIs and ensure application remains responsive.
 
-5. In addition to the mode described above which load tests the system, include a 
-mode that queries 2 MySQL databases to get tracking information about files that have 
+6. In addition to the mode described above which load tests the system, include a 
+command that queries 2 MySQL databases to get tracking information about files that have 
 been sent in a given timespan. The 2 MySQL database connections and credentials are user 
 configurable, but the database schema that should be expected is described below.
-Include options for polling rate. The application should not modify the DB and any
-errors with the SQL query are fatal.
+The application should not modify the DB and any errors with the SQL query are fatal.
+
+Accept input timespan using either single value (e.g., "30m" or "1h") for transactions in 
+the last X seconds/minutes/hours or a datetime span. Make the datetime span input user 
+friendly.
 
 Database schema:
  - UUID: a UUID unique to each transaction that will be used to correlate the 2 DBs
+ - username: string, the username of the user that logged in an initiated the transfer
  - filename: string, name of file sent
  - startTime: a timestamp when the server started proccessing the file
  - endTime: a timestamp when the server completed proccessing the file
@@ -74,12 +76,18 @@ The application should attempt to match entries from each DB based on UUID. The 
 transfer time is determed by (egress endTime - ingress startTime). The status from 
 both DBs should be included in the output, but the egress status determined pass/fail.
 
-The output of this process is a report in HTML format saved to a user-specified path.
-The page should display the table of transfers and statistics about the entire test run.
-The page is going to be provided to enterprise stakeholders so it should look professional
-and use CSS as necessary. Key statistics we are interested in are pass rate, min/max/avg
-transit times, etc.
+The output of this process is a test report in HTML format saved to a user-specified path.
+First, the page should display statistics about the entire test run. Then there should be
+statistics broken down by job. Use username to map database rows to jobs. 
+The page is going to be provided to enterprise customers so it should look professional
+and use CSS (colors, fonts, styles, etc.) as necessary to create a customer-friendly test
+report that calls out pass (green), fail (red), and so on. Key statistics we are interested
+in are pass rate, min/max/avg transit times, etc.
 
-Include a seperate list of database rows ff there are any which do not form a pair based 
-on UUID. A row with each UUID should exist on boths DBs, otherwise an exceptional error 
-has occured.
+The full transaction list can be displayed now but it should be very compact as there could 
+be thousands of rows.
+
+Include seperate lists of database rows which do not form a pair based on username or
+UUID. A row with each UUID must exist on boths DBs, otherwise an exceptional error 
+has occured. Each row username should match one of the jobs, but it is possible that other
+external users/programs are generating traffic, so list as a "warning".

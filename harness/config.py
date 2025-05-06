@@ -16,10 +16,13 @@ class SSLConfig:
 class HTTPJobConfig:
     url: str
     method: str
+    username: str
     directory: str
-    rate: str
+    initial_rate: str  # Starting transfer rate (e.g., "10/hour")
+    target_rate: str   # Final transfer rate (e.g., "60/hour")
     ssl: Optional[SSLConfig] = None
     headers: Optional[Dict[str, str]] = None
+    ramp_rate: Optional[str] = None  # Rate of increase (e.g., "5/hour")
 
 
 @dataclass
@@ -29,9 +32,11 @@ class SFTPJobConfig:
     username: str
     directory: str
     remote_path: str
-    rate: str
+    initial_rate: str  # Starting transfer rate (e.g., "10/hour")
+    target_rate: str   # Final transfer rate (e.g., "60/hour")
     key_path: Optional[str] = None
     password: Optional[str] = None
+    ramp_rate: Optional[str] = None  # Rate of increase (e.g., "5/hour")
 
 
 @dataclass
@@ -55,7 +60,7 @@ class DatabaseConfig:
 @dataclass
 class MonitoringConfig:
     poll_interval: int
-    timespan: int
+    timespan: str  # Changed to str to support "30m" format
 
 
 @dataclass
@@ -84,12 +89,23 @@ def load_config(config_path: str) -> Config:
             ssl_config = None
             if 'ssl' in job_data['config']:
                 ssl_config = SSLConfig(**job_data['config']['ssl'])
+
+            # Handle legacy 'rate' field for backward compatibility
+            config_data = job_data['config'].copy()
+            if 'rate' in config_data:
+                config_data['initial_rate'] = config_data['target_rate'] = config_data.pop('rate')
+
             job_config = HTTPJobConfig(
-                **{k: v for k, v in job_data['config'].items() if k != 'ssl'},
+                **{k: v for k, v in config_data.items() if k != 'ssl'},
                 ssl=ssl_config
             )
         elif job_data['type'] == 'sftp':
-            job_config = SFTPJobConfig(**job_data['config'])
+            # Handle legacy 'rate' field for backward compatibility
+            config_data = job_data['config'].copy()
+            if 'rate' in config_data:
+                config_data['initial_rate'] = config_data['target_rate'] = config_data.pop('rate')
+
+            job_config = SFTPJobConfig(**config_data)
         
         jobs.append(JobConfig(
             name=job_data['name'],
@@ -104,8 +120,13 @@ def load_config(config_path: str) -> Config:
         for name, db_config in raw_config.get('databases', {}).items()
     }
 
-    # Create monitoring config
-    monitoring = MonitoringConfig(**raw_config.get('monitoring', {}))
+    # Create monitoring config with defaults
+    monitoring_data = raw_config.get('monitoring', {})
+    if 'timespan' not in monitoring_data:
+        monitoring_data['timespan'] = '1h'  # Default to 1 hour
+    if 'poll_interval' not in monitoring_data:
+        monitoring_data['poll_interval'] = 60  # Default to 60 seconds
+    monitoring = MonitoringConfig(**monitoring_data)
 
     return Config(
         log_level=raw_config.get('log_level', 'INFO'),

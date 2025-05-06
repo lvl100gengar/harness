@@ -13,15 +13,19 @@ jobs:
     config:
       url: "https://example.com/upload"
       method: POST
+      username: "http_user"  # Username for authentication and tracking
       directory: "./files_to_upload"
-      rate: 60/hour  # 60 files per hour
+      initial_rate: "10/hour"  # Start at 10 files per hour
+      target_rate: "60/hour"   # Ramp up to 60 files per hour
+      ramp_rate: "10/hour"     # Increase by 10 files per hour
       ssl:
         cert_path: "/path/to/cert.pem"
         key_path: "/path/to/key.pem"
       headers:
         Content-Type: "application/octet-stream"
-        X-Transaction-Id: "{{uuid}}"  # Will be replaced with generated UUID
-        X-Filename: "{{filename}}"    # Will be replaced with current filename
+        X-Transaction-Id: "{{uuid}}"  # Replaced with generated UUID
+        X-Filename: "{{filename}}"    # Replaced with current filename
+        X-Username: "{{username}}"    # Replaced with configured username
 
   - name: sftp_upload_job
     type: sftp
@@ -29,12 +33,14 @@ jobs:
     config:
       host: "sftp.example.com"
       port: 22
-      username: "uploader"
-      key_path: "/path/to/ssh_key"  # Either key_path or password must be specified
+      username: "sftp_user"  # Username for authentication and tracking
+      key_path: "/path/to/ssh_key"  # Either key_path or password
       # password: "secret"          # Uncomment to use password auth
       directory: "./files_to_upload"
       remote_path: "/uploads"
-      rate: 30/hour  # 30 files per hour
+      initial_rate: "5/hour"    # Start at 5 files per hour
+      target_rate: "30/hour"    # Ramp up to 30 files per hour
+      ramp_rate: "5/hour"       # Increase by 5 files per hour
 
 # Database configuration
 databases:
@@ -52,4 +58,9 @@ databases:
     database: "file_tracking"
     username: "reader"
     password: "secret"
-    ssl: true 
+    ssl: true
+
+# Optional monitoring configuration
+monitoring:
+  timespan: "1h"  # Default time window for reports
+  poll_interval: 60  # Seconds between status checks 
