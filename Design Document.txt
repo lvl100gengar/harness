@@ -91,3 +91,44 @@ Include seperate lists of database rows which do not form a pair based on userna
 UUID. A row with each UUID must exist on boths DBs, otherwise an exceptional error 
 has occured. Each row username should match one of the jobs, but it is possible that other
 external users/programs are generating traffic, so list as a "warning".
+
+7. Create a separate program that hosts a single page website for real-time transaction monitoring:
+
+Core Requirements:
+- Use Flask/FastAPI for backend and basic JavaScript for frontend
+- Display a responsive table of recent transactions with configurable refresh rate (5-60 seconds)
+- Show configurable number of transactions (default 100, max 1000)
+- Include database connectivity status indicators with last successful connection time
+- Implement automatic reconnection for database failures
+- Support both mock data and real database modes
+
+UI Components:
+- Transaction table showing: UUID, Username, Filename, Start Time, End Time, Duration, Status
+- Database status panel showing connection state for both ingress/egress databases
+- Controls for refresh rate and number of transactions to display
+- Last update timestamp
+- Pause/Resume button for auto-refresh
+- Loading indicators during data refresh
+
+Mock Data Mode:
+- Generate realistic transaction data at configurable rates
+- Simulate various status conditions (SUCCESS, FAILED, TIMEOUT)
+- Allow switching between mock and real database modes via configuration
+- Include sample data that demonstrates all possible status conditions
+
+Configuration:
+- Web server port and host
+- Database connection details
+- Mock data generation settings
+- Refresh rate bounds (min/max)
+- Maximum displayable transactions
+- Enable/disable features (sorting, filtering, etc.)
+
+Error Handling:
+- Clear visual indicators for connection issues
+- Automatic reconnection with configurable retry policy
+- Detailed error messages in logs
+- Graceful degradation when services are unavailable
+
+The implementation should follow the project's existing Python best practices and include
+appropriate documentation and tests.

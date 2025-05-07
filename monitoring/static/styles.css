@@ -1,0 +1,134 @@
+/* Status indicators */
+.status-indicator {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: #9CA3AF;  /* gray-400 */
+}
+
+.status-indicator.connected {
+    background-color: #10B981;  /* green-500 */
+}
+
+.status-indicator.disconnected {
+    background-color: #EF4444;  /* red-500 */
+}
+
+/* Pulse animation for active transfers */
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.1);
+        opacity: 0.8;
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.status-indicator.connected {
+    animation: pulse 2s infinite;
+}
+
+/* Metrics value transition */
+[id^="files-"], [id^="bytes-"], [id^="avg-"], [id^="total-"] {
+    transition: color 0.3s ease-in-out;
+}
+
+/* Header controls */
+select {
+    padding: 0.25rem 2rem 0.25rem 0.5rem !important;
+    font-size: 0.875rem !important;
+    line-height: 1.25rem !important;
+    height: 2rem !important;
+}
+
+/* Status colors */
+.status-success {
+    color: #059669;  /* green-600 */
+}
+
+.status-failed {
+    color: #DC2626;  /* red-600 */
+}
+
+.status-timeout {
+    color: #D97706;  /* yellow-600 */
+}
+
+.status-in-transit {
+    color: #2563EB;  /* blue-600 */
+}
+
+/* Loading animation */
+.loading {
+    position: relative;
+}
+
+.loading::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.loading::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 24px;
+    height: 24px;
+    margin: -12px 0 0 -12px;
+    border: 2px solid #6366F1;  /* Indigo */
+    border-top-color: transparent;
+    border-radius: 50%;
+    z-index: 1;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Table row hover effect */
+.transaction-row:hover {
+    background-color: #F3F4F6;
+}
+
+/* Truncate long text */
+.truncate-text {
+    max-width: 200px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+    .truncate-text {
+        max-width: 150px;
+    }
+    
+    .header-controls {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    select {
+        width: auto !important;
+    }
+} 
