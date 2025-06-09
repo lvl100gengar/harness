@@ -5,3 +5,10 @@ __pycache__
 *.pyw
 *.pyz
 
+env/
+output/
+files_to_upload/
+
+# Ignore YAML files in root except config example
+/*.yaml
+!config_example.yaml
