@@ -1,7 +1,6 @@
 """Job execution module for file transfers."""
 
 import asyncio
-import logging
 import os
 import uuid
 from abc import ABC, abstractmethod
@@ -23,7 +22,6 @@ class Job(ABC):
         self.name = name
         self.directory = directory
         self.username = username
-        self.logger = logging.getLogger(f"job.{name}")
 
         # Parse rates
         self.initial_files_per_second = parse_rate(initial_rate)
@@ -64,7 +62,7 @@ class Job(ABC):
         if new_rate != self.current_files_per_second:
             self.current_files_per_second = new_rate
             self.interval = self._calculate_interval()
-            self.logger.info(
+            print(
                 f"Ramped transfer rate to {self.current_files_per_second:.2f} files/second "
                 f"(interval: {self.interval:.2f}s)"
             )
@@ -78,17 +76,17 @@ class Job(ABC):
 
     async def run(self):
         """Run the job continuously."""
-        self.logger.info(f"Starting job {self.name} for user {self.username}")
+        print(f"Starting job {self.name} for user {self.username}")
         
         if self.ramp_files_per_second:
-            self.logger.info(
+            print(
                 f"Rate ramping enabled: Starting at {self.current_files_per_second:.2f} files/second, "
                 f"increasing by {self.ramp_files_per_second:.2f} files/second, "
                 f"up to {self.target_files_per_second:.2f} files/second"
             )
             self.last_ramp_time = datetime.now()
         else:
-            self.logger.info(
+            print(
                 f"Fixed rate: {self.current_files_per_second:.2f} files/second "
                 f"(interval: {self.interval:.2f}s)"
             )
@@ -116,11 +114,11 @@ class Job(ABC):
                         if success:
                             os.remove(filepath)  # Remove file after successful transfer
                     except Exception as e:
-                        self.logger.error(f"Error sending file {filename}: {str(e)}")
+                        print(f"Error sending file {filename}: {str(e)}")
                         success = False
 
                     duration = (datetime.now() - start_time).total_seconds()
-                    self.logger.info(
+                    print(
                         f"File {filename} transfer {'succeeded' if success else 'failed'} "
                         f"(took {duration:.2f}s)"
                     )
@@ -129,7 +127,7 @@ class Job(ABC):
                     await asyncio.sleep(max(0, self.interval - duration))
 
             except Exception as e:
-                self.logger.error(f"Job error: {str(e)}")
+                print(f"Job error: {str(e)}")
                 await asyncio.sleep(5)  # Wait before retrying
 
 
@@ -193,7 +191,7 @@ class HTTPJob(Job):
             ) as response:
                 return response.status < 400
         except Exception as e:
-            self.logger.error(f"HTTP request failed: {str(e)}")
+            print(f"HTTP request failed: {str(e)}")
             return False
 
 
@@ -240,7 +238,7 @@ class SFTPJob(Job):
                 await sftp.put(filepath, remote_path)
                 return True
         except Exception as e:
-            self.logger.error(f"SFTP transfer failed: {str(e)}")
+            print(f"SFTP transfer failed: {str(e)}")
             if self.client:
                 self.client.close()
             self.client = None

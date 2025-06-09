@@ -1,9 +1,7 @@
 # File Transfer Harness Configuration
 
 # Global settings
-log_level: INFO  # DEBUG, INFO, WARN, ERROR
 output_dir: ./output
-report_path: ./output/report.html
 
 # Job definitions
 jobs:
@@ -38,29 +36,6 @@ jobs:
       # password: "secret"          # Uncomment to use password auth
       directory: "./files_to_upload"
       remote_path: "/uploads"
-      initial_rate: "5/hour"    # Start at 5 files per hour
-      target_rate: "30/hour"    # Ramp up to 30 files per hour
-      ramp_rate: "5/hour"       # Increase by 5 files per hour
-
-# Database configuration
-databases:
-  ingress:
-    host: "ingress-db.example.com"
-    port: 3306
-    database: "file_tracking"
-    username: "reader"
-    password: "secret"
-    ssl: true
-  
-  egress:
-    host: "egress-db.example.com"
-    port: 3306
-    database: "file_tracking"
-    username: "reader"
-    password: "secret"
-    ssl: true
-
-# Optional monitoring configuration
-monitoring:
-  timespan: "1h"  # Default time window for reports
-  poll_interval: 60  # Seconds between status checks 
+      initial_rate: "30/hour"
+      target_rate: "30/hour"
+      ramp_rate: "5/hour"       # Optional: Increase rate by this amount

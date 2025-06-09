@@ -3,18 +3,14 @@ File Transfer Harness
 The application will allow users to configure file transfers at specified
 intervals using HTTP(S) or SFTP. I am taking inspiration from load testing 
 tools like k6. The harness enables testing of complex applications that process 
-files and place them on destination servers. Transfer status is queried from a 
-pair MySQL databases sitting at the ingress and egress points of the application.
-
+files and place them on destination servers.
 
 Design Guidelines
 =================
 1. The application should work on current Linux OS, particularly RHEL 9, but
 APIs which are platform-independent should be preferred.
 
-2. The application should have a powerful and well-designed CLI. Include flags 
-for verbosity. Ensure standard outputs are readable and structured since the 
-terminal UX/UI is very important. CLI flags take precedence over config file.
+2. The application should have a powerful and well-designed CLI.
 No interactive mode required.
 
 3. Include good logs that can help debug the application or network connectivity 
@@ -22,9 +18,7 @@ issues.
 
 4. This application is intended to be long-running, so error handling should be
 robust. Some errors, such as failing to connect to a server, are possible outcomes 
-for the load test and should not cause the test to stop. At higher data rates, 
-these types of failures need to be included as part of the statistics provided at 
-the conclusion of the test run.
+for the load test and should not cause the test to stop.
 
 5. Use Python 3 to implement this project. Use best practices and Pythonic design
 patterns. Determine best package references to implement the features below.
@@ -53,82 +47,3 @@ using files per period (e.g., files/hour).
 4. The application should be capable of executing several jobs concurrently. The 
 idea is to simulate loads on the system where multiple data sources are uploading
 simultaneously. Use thread/async APIs and ensure application remains responsive.
-
-6. In addition to the mode described above which load tests the system, include a 
-command that queries 2 MySQL databases to get tracking information about files that have 
-been sent in a given timespan. The 2 MySQL database connections and credentials are user 
-configurable, but the database schema that should be expected is described below.
-The application should not modify the DB and any errors with the SQL query are fatal.
-
-Accept input timespan using either single value (e.g., "30m" or "1h") for transactions in 
-the last X seconds/minutes/hours or a datetime span. Make the datetime span input user 
-friendly.
-
-Database schema:
- - UUID: a UUID unique to each transaction that will be used to correlate the 2 DBs
- - username: string, the username of the user that logged in an initiated the transfer
- - filename: string, name of file sent
- - startTime: a timestamp when the server started proccessing the file
- - endTime: a timestamp when the server completed proccessing the file
- - status: an enum of possible result codes (SUCCESS, FAILED, TIMEOUT)
-
-The application should attempt to match entries from each DB based on UUID. The total 
-transfer time is determed by (egress endTime - ingress startTime). The status from 
-both DBs should be included in the output, but the egress status determined pass/fail.
-
-The output of this process is a test report in HTML format saved to a user-specified path.
-First, the page should display statistics about the entire test run. Then there should be
-statistics broken down by job. Use username to map database rows to jobs. 
-The page is going to be provided to enterprise customers so it should look professional
-and use CSS (colors, fonts, styles, etc.) as necessary to create a customer-friendly test
-report that calls out pass (green), fail (red), and so on. Key statistics we are interested
-in are pass rate, min/max/avg transit times, etc.
-
-The full transaction list can be displayed now but it should be very compact as there could 
-be thousands of rows.
-
-Include seperate lists of database rows which do not form a pair based on username or
-UUID. A row with each UUID must exist on boths DBs, otherwise an exceptional error 
-has occured. Each row username should match one of the jobs, but it is possible that other
-external users/programs are generating traffic, so list as a "warning".
-
-7. Create a separate program that hosts a single page website for real-time transaction monitoring:
-
-Core Requirements:
-- Use Flask/FastAPI for backend and basic JavaScript for frontend
-- Display a responsive table of recent transactions with configurable refresh rate (5-60 seconds)
-- Show configurable number of transactions (default 100, max 1000)
-- Include database connectivity status indicators with last successful connection time
-- Implement automatic reconnection for database failures
-- Support both mock data and real database modes
-
-UI Components:
-- Transaction table showing: UUID, Username, Filename, Start Time, End Time, Duration, Status
-- Database status panel showing connection state for both ingress/egress databases
-- Controls for refresh rate and number of transactions to display
-- Last update timestamp
-- Pause/Resume button for auto-refresh
-- Loading indicators during data refresh
-
-Mock Data Mode:
-- Generate realistic transaction data at configurable rates
-- Simulate various status conditions (SUCCESS, FAILED, TIMEOUT)
-- Allow switching between mock and real database modes via configuration
-- Include sample data that demonstrates all possible status conditions
-
-Configuration:
-- Web server port and host
-- Database connection details
-- Mock data generation settings
-- Refresh rate bounds (min/max)
-- Maximum displayable transactions
-- Enable/disable features (sorting, filtering, etc.)
-
-Error Handling:
-- Clear visual indicators for connection issues
-- Automatic reconnection with configurable retry policy
-- Detailed error messages in logs
-- Graceful degradation when services are unavailable
-
-The implementation should follow the project's existing Python best practices and include
-appropriate documentation and tests.

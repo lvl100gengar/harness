@@ -48,29 +48,9 @@ class JobConfig:
 
 
 @dataclass
-class DatabaseConfig:
-    host: str
-    port: int
-    database: str
-    username: str
-    password: str
-    ssl: bool
-
-
-@dataclass
-class MonitoringConfig:
-    poll_interval: int
-    timespan: str  # Changed to str to support "30m" format
-
-
-@dataclass
 class Config:
-    log_level: str
     output_dir: str
-    report_path: str
     jobs: List[JobConfig]
-    databases: Dict[str, DatabaseConfig]
-    monitoring: MonitoringConfig
 
 
 def load_config(config_path: str) -> Config:
@@ -114,27 +94,9 @@ def load_config(config_path: str) -> Config:
             config=job_config
         ))
 
-    # Create database configs
-    databases = {
-        name: DatabaseConfig(**db_config)
-        for name, db_config in raw_config.get('databases', {}).items()
-    }
-
-    # Create monitoring config with defaults
-    monitoring_data = raw_config.get('monitoring', {})
-    if 'timespan' not in monitoring_data:
-        monitoring_data['timespan'] = '1h'  # Default to 1 hour
-    if 'poll_interval' not in monitoring_data:
-        monitoring_data['poll_interval'] = 60  # Default to 60 seconds
-    monitoring = MonitoringConfig(**monitoring_data)
-
     return Config(
-        log_level=raw_config.get('log_level', 'INFO'),
         output_dir=raw_config.get('output_dir', './output'),
-        report_path=raw_config.get('report_path', './output/report.html'),
         jobs=jobs,
-        databases=databases,
-        monitoring=monitoring
     )
 
 
