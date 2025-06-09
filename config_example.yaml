@@ -1,41 +1,57 @@
-# File Transfer Harness Configuration
+# File Transfer Harness Configuration Example
+#
+# This file configures the file transfer jobs to be executed.
+# To disable a job, simply comment out its entire section.
 
 # Global settings
 output_dir: ./output
 
 # Job definitions
 jobs:
+  # HTTP Upload Job Example
   - name: http_upload_job
     type: http
-    enabled: true
     config:
-      url: "https://example.com/upload"
-      method: POST
-      username: "http_user"  # Username for authentication and tracking
-      directory: "./files_to_upload"
-      initial_rate: "10/hour"  # Start at 10 files per hour
-      target_rate: "60/hour"   # Ramp up to 60 files per hour
-      ramp_rate: "10/hour"     # Increase by 10 files per hour
+      # Required parameters
+      url: "https://example.com/upload"  # Target URL for uploads
+      directory: "./files_to_upload"     # Directory containing files to transfer
+      initial_rate: "10/hour"           # Start at 10 files per hour
+      target_rate: "60/hour"            # Ramp up to 60 files per hour
+      
+      # Optional parameters
+      method: POST                      # HTTP method (default: POST)
+      ramp_rate: "10/hour"             # Increase by 10 files per hour
+      transfer_mode: "concurrent"       # "sequential" or "concurrent"
+      max_concurrent_transfers: 5       # Maximum parallel transfers
+      
+      # SSL configuration (optional)
       ssl:
         cert_path: "/path/to/cert.pem"
         key_path: "/path/to/key.pem"
+      
+      # Custom headers (optional)
+      # Supports templates: {{uuid}}, {{filename}}
       headers:
         Content-Type: "application/octet-stream"
-        X-Transaction-Id: "{{uuid}}"  # Replaced with generated UUID
-        X-Filename: "{{filename}}"    # Replaced with current filename
-        X-Username: "{{username}}"    # Replaced with configured username
+        X-Transaction-Id: "{{uuid}}"    # Replaced with generated UUID
+        X-Filename: "{{filename}}"      # Replaced with current filename
 
+  # SFTP Upload Job Example
   - name: sftp_upload_job
     type: sftp
-    enabled: true
     config:
-      host: "sftp.example.com"
-      port: 22
-      username: "sftp_user"  # Username for authentication and tracking
-      key_path: "/path/to/ssh_key"  # Either key_path or password
-      # password: "secret"          # Uncomment to use password auth
-      directory: "./files_to_upload"
-      remote_path: "/uploads"
-      initial_rate: "30/hour"
-      target_rate: "30/hour"
-      ramp_rate: "5/hour"       # Optional: Increase rate by this amount
+      # Required parameters
+      host: "sftp.example.com"         # SFTP server hostname/IP
+      username: "sftp_user"            # SFTP username
+      directory: "./files_to_upload"   # Directory containing files to transfer
+      remote_path: "/uploads"          # Remote directory for uploads
+      initial_rate: "30/hour"          # Start at 30 files per hour
+      target_rate: "30/hour"           # Target rate
+      
+      # Optional parameters
+      port: 22                         # SFTP port (default: 22)
+      key_path: "/path/to/ssh_key"     # SSH private key path
+      # password: "secret"             # Alternative to key_path
+      ramp_rate: "5/hour"             # Increase rate by this amount
+      transfer_mode: "sequential"      # "sequential" or "concurrent"
+      max_concurrent_transfers: 3      # Maximum parallel transfers

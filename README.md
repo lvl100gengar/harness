@@ -4,10 +4,12 @@ A Python-based tool for testing file transfer systems using HTTP(S) and SFTP pro
 
 ## Features
 
-- Configure and run multiple file transfer jobs concurrently
-- Support for HTTP(S) and SFTP protocols with username-based authentication
-- Rate-limited file transfers with configurable ramp rates
-- Robust error handling
+- Multiple concurrent file transfer jobs
+- Support for HTTP(S) and SFTP protocols
+- Rate-limited transfers with configurable ramp-up
+- Sequential or concurrent transfer modes
+- Detailed logging and metrics
+- Template support in HTTP headers
 
 ## Installation
 
@@ -30,56 +32,96 @@ pip install -r requirements.txt
 
 ## Configuration
 
-Create a YAML configuration file (see `config_example.yaml` for a complete example):
+Create a YAML configuration file (see `config_example.yaml` for a complete example).
+
+### HTTP Job Configuration
+
+Required parameters:
+- `directory`: Path to directory containing files to transfer
+- `initial_rate`: Initial transfer rate (e.g., "10/s", "5/min", "100/hour")
+- `target_rate`: Target transfer rate to ramp up to
+- `url`: Target URL for HTTP uploads
+
+Optional parameters:
+- `method`: HTTP method (default: POST)
+- `headers`: Custom HTTP headers with template support:
+  - `{{uuid}}`: Replaced with generated transaction ID
+  - `{{filename}}`: Replaced with current file name
+- `ssl`: SSL configuration for HTTPS connections
+- `ramp_rate`: Rate at which to increase transfers
+- `transfer_mode`: "sequential" or "concurrent" (default: sequential)
+- `max_concurrent_transfers`: Maximum parallel transfers
+
+### SFTP Job Configuration
+
+Required parameters:
+- `directory`: Path to directory containing files to transfer
+- `initial_rate`: Initial transfer rate (e.g., "10/s", "5/min", "100/hour")
+- `target_rate`: Target transfer rate to ramp up to
+- `host`: SFTP server hostname/IP
+- `username`: SFTP username
+- `remote_path`: Remote directory path for uploads
+
+Optional parameters:
+- `port`: SFTP port (default: 22)
+- `password`: Password for authentication
+- `key_path`: Path to SSH private key (either password or key_path required)
+- `ramp_rate`: Rate at which to increase transfers
+- `transfer_mode`: "sequential" or "concurrent" (default: sequential)
+- `max_concurrent_transfers`: Maximum parallel transfers
+
+### Example Configuration
 
 ```yaml
 # Global settings
 output_dir: ./output
 
-# Job definitions
 jobs:
+  # HTTP Upload Job
   - name: http_upload_job
     type: http
-    enabled: true
     config:
       url: "https://example.com/upload"
-      method: POST
-      username: "http_user"  # Username for authentication and tracking
       directory: "./files_to_upload"
-      initial_rate: "10/hour"  # Start at 10 files per hour
-      target_rate: "60/hour"   # Ramp up to 60 files per hour
-      ramp_rate: "10/hour"     # Increase by 10 files per hour
-      ssl:
-        cert_path: "/path/to/cert.pem"
-        key_path: "/path/to/key.pem"
+      initial_rate: "10/hour"
+      target_rate: "60/hour"
+      ramp_rate: "10/hour"
       headers:
-        Content-Type: "application/octet-stream"
-        X-Transaction-Id: "{{uuid}}"  # Replaced with generated UUID
-        X-Filename: "{{filename}}"    # Replaced with current filename
-        X-Username: "{{username}}"    # Replaced with configured username
+        X-Transaction-Id: "{{uuid}}"
+        X-Filename: "{{filename}}"
 
+  # SFTP Upload Job
   - name: sftp_upload_job
     type: sftp
-    enabled: true
     config:
       host: "sftp.example.com"
-      port: 22
-      username: "sftp_user"  # Username for authentication and tracking
-      key_path: "/path/to/ssh_key"  # Either key_path or password
-      # password: "secret"          # Uncomment to use password auth
+      username: "sftp_user"
       directory: "./files_to_upload"
       remote_path: "/uploads"
       initial_rate: "30/hour"
       target_rate: "30/hour"
-      ramp_rate: "5/hour"       # Optional: Increase rate by this amount
+      key_path: "/path/to/ssh_key"
 ```
 
 ## Usage
 
-To run the file transfer jobs:
+Run the harness with your configuration:
+
 ```bash
 python -m harness -c config.yaml run
 ```
+
+The harness will:
+1. Start all configured jobs
+2. Monitor transfer rates and adjust as configured
+3. Log detailed metrics to harness.log
+4. Display summary statistics in the console
+
+## Logging
+
+- Console output shows job status and summary metrics
+- Detailed logs are written to harness.log
+- Transfer metrics are logged every minute
 
 ## Development
 
